@@ -867,6 +867,7 @@ function renderOfficers(){
         <span style="flex:1"></span>
         <button class="btn small secondary" id="dutyTests" title="הרצת בדיקות אוטומטיות על מנגנון הייבוא">🧪 בדיקות ייבוא</button>
         <button class="btn small secondary" id="dutyExport">⬇️ ייצוא לאקסל</button>
+        <button class="btn small danger" id="dutyReset">🗑️ איפוס הטבלה</button>
       </div>
       <div class="toolbar">
         <select class="search-input" id="dutyMonthSel">${MONTH_NAMES.map((m,i)=>`<option value="${i}" ${i===dutyMonth?'selected':''}>${m}</option>`).join('')}</select>
@@ -886,6 +887,7 @@ function renderOfficers(){
     document.getElementById('dutyFile').addEventListener('change',e=>{processDutyFile(e.target.files[0]);e.target.value='';});
     document.getElementById('dutyExport').onclick=exportDutiesToExcel;
     document.getElementById('dutyTests').onclick=showDutyTestResults;
+    document.getElementById('dutyReset').onclick=resetDutyTable;
     const dz=document.getElementById('dutyDropzone');
     dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('dragover');});
     dz.addEventListener('dragleave',()=>dz.classList.remove('dragover'));
@@ -1368,6 +1370,20 @@ function exportDutiesToExcel(){
   XLSX.utils.book_append_sheet(wb,ws,'תורנים');
   XLSX.writeFile(wb,'לוח_תורנים.xlsx');
   toast('קובץ האקסל הורד בהצלחה','ok');
+}
+function resetDutyTable(){
+  normalizeDuties();
+  const total=Object.values(state.duties).reduce((a,l)=>a+l.length,0);
+  if(!total){toast('לוח התורנים כבר ריק','ok');return;}
+  confirmBox('איפוס לוח התורנים',
+    `הפעולה תמחק <b>את כל התורנויות בלוח</b> (${total} רשומות בסך הכול) — גם כאלה שיובאו מאקסל וגם כאלה שנוספו ידנית — ותעדכן מיד אצל כולם. הפעולה בלתי הפיכה. אם תרצו גיבוי, לחצו "ייצוא לאקסל" לפני האיפוס.`,
+    async()=>{
+      state.duties={};
+      await saveShared('duties');
+      toast('לוח התורנים אופס בהצלחה','ok');
+      renderDuty();
+    },
+    'כן, לאפס את הכול');
 }
 
 /* ==================== הזמנות ==================== */
