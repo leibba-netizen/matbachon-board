@@ -7,8 +7,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Secular+One&family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <style>
 :root{
   --tile:#147B7C; --tile-dark:#0C5A5B;
@@ -548,38 +546,21 @@ const initials=n=>(n||'?').trim().slice(0,1).toUpperCase();
 /* ==================== חיבור ל-Firebase (אחסון משותף וזמן-אמת) ==================== */
 // למילוי חד-פעמי: הדביקו כאן את פרטי פרויקט ה-Firebase שלכם (Project settings → General → Your apps → SDK config).
 // עד שהשדות ימולאו, האתר ימשיך לעבוד במצב מקומי בלבד (בלי שיתוף בין משתמשים).
-const FIREBASE_CONFIG={
-  apiKey:"YOUR_API_KEY",
-  authDomain:"YOUR_PROJECT_ID.firebaseapp.com",
-  projectId:"YOUR_PROJECT_ID",
-  storageBucket:"YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId:"YOUR_SENDER_ID",
-  appId:"YOUR_APP_ID"
+const FIREBASE_READY=true; // נשמר לשם תאימות לתצוגה הקיימת; האחסון מנוהל כעת בשרת.
+window.storage={
+  async get(key){
+    const response=await fetch('/api/state/'+encodeURIComponent(key),{cache:'no-store'});
+    if(!response.ok)throw new Error('Shared state request failed');
+    return response.json();
+  },
+  async set(key,value){
+    const response=await fetch('/api/state/'+encodeURIComponent(key),{
+      method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({value})
+    });
+    if(!response.ok)throw new Error('Shared state update failed');
+    return true;
+  }
 };
-const FIREBASE_READY=!!(FIREBASE_CONFIG.apiKey&&FIREBASE_CONFIG.apiKey!=='YOUR_API_KEY');
-let fbDb=null;
-if(FIREBASE_READY){
-  try{firebase.initializeApp(FIREBASE_CONFIG);fbDb=firebase.firestore();}catch(e){console.error('Firebase init failed',e);}
-}
-if(fbDb){
-  window.storage={
-    async get(key){
-      try{const snap=await fbDb.collection('kitchen2').doc(key).get();
-        return snap.exists?{value:snap.data().value}:{value:null};}
-      catch(e){return {value:null};}
-    },
-    async set(key,value){
-      await fbDb.collection('kitchen2').doc(key).set({value,updatedAt:Date.now()});
-      return true;
-    }
-  };
-} else {
-  // מצב גיבוי מקומי: שומר בדפדפן של המשתמש בלבד, עד שיוגדר Firebase.
-  window.storage={
-    async get(key){try{return {value:localStorage.getItem('local_'+key)};}catch(e){return {value:null};}},
-    async set(key,value){try{localStorage.setItem('local_'+key,value);}catch(e){}return true;}
-  };
-}
 
 /* ==================== אחסון משותף ==================== */
 const KEYS=['ratings','duties','orders','issues','hs','chal','players'];
@@ -599,18 +580,12 @@ async function saveShared(key,silent){
   catch(e){toast('השמירה נכשלה — בדקו חיבור ונסו שוב','bad');return false;}
 }
 function watchShared(){
-  if(!fbDb)return;
-  KEYS.forEach(k=>{
-    fbDb.collection('kitchen2').doc('kitchen2:'+k).onSnapshot(snap=>{
-      if(!snap.exists)return;
-      const data=snap.data();if(!data||data.value==null)return;
-      try{state[k]=JSON.parse(data.value);}catch(e){return;}
-      if(arena.classList.contains('open')||overlay.classList.contains('open'))return;
-      const ae=document.activeElement;
-      if(ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA'))return;
-      renderPage(currentPage);
-    },err=>console.error('Firestore listener error',err));
-  });
+  setInterval(async()=>{
+    if(arena.classList.contains('open')||overlay.classList.contains('open'))return;
+    const ae=document.activeElement;
+    if(ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA'))return;
+    await loadShared();renderPage(currentPage);
+  },2000);
 }
 function toast(msg,kind){
   const t=document.createElement('div');t.className='toast'+(kind?' '+kind:'');
@@ -2170,14 +2145,6 @@ function showResults(id,diff,score,secs,earned,st){
 /* ==================== רענון בזמן אמת ==================== */
 // כש-Firebase מוגדר: מאזינים חיים (onSnapshot) מעדכנים מיידית — ראו watchShared().
 // כשלא מוגדר (מצב מקומי): פולינג קליל שומר את הדף עקבי עם עצמו.
-if(!FIREBASE_READY){
-  setInterval(async()=>{
-    if(arena.classList.contains('open')||overlay.classList.contains('open'))return;
-    const ae=document.activeElement;
-    if(ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA'))return;
-    await loadShared();renderPage(currentPage);
-  },7000);
-}
 
 /* ==================== אתחול ==================== */
 (async function init(){
