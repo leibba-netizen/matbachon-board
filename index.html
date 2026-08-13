@@ -141,36 +141,62 @@ table.simple th{background:#EEF3EC}
 .chip.on.c194{background:var(--c194);border-color:var(--c194)}
 .search-input{font-family:'Rubik';font-size:.9rem;padding:8px 14px;border:2px solid var(--line);border-radius:999px;min-width:180px}
 .search-input:focus{outline:none;border-color:var(--tile)}
+/* ===== פאנל תורנים: פלטה ייעודית (כחול כהה/כחול-אפור/לבן) ===== */
+.duty-panel{--duty-header:#1B3358;--duty-bg:#EEF2F7;--duty-line:#D5DEE8;
+  background:var(--duty-bg);border-radius:18px;padding:16px;margin:-4px -4px 0}
+.duty-panel h2,.duty-panel h3{color:var(--duty-header)}
+
 .duty-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
 @media(max-width:900px){.duty-grid{grid-template-columns:repeat(4,1fr)}}
-.duty-grid .hd{text-align:center;font-weight:700;font-size:.85rem;color:var(--muted);padding-bottom:4px}
+.duty-grid .hd{text-align:center;font-weight:700;font-size:.85rem;color:var(--duty-header);padding-bottom:4px}
 .dcard{
-  min-height:104px;border:2px solid var(--line);border-radius:14px;background:#FBFCFA;padding:8px;
-  cursor:pointer;display:flex;flex-direction:column;gap:3px;text-align:right;font-family:'Rubik';
+  min-height:104px;border:2px solid var(--duty-line);border-radius:14px;background:#fff;padding:8px;
+  cursor:pointer;display:flex;flex-direction:column;gap:4px;text-align:right;font-family:'Rubik';
   transition:transform .12s,box-shadow .12s;
 }
-.dcard:hover{transform:translateY(-3px);box-shadow:0 5px 0 rgba(32,38,31,.15)}
-.dcard:focus-visible{outline:3px solid var(--tile);outline-offset:2px}
-.dcard .dnum{font-family:'Secular One';font-size:1.15rem;line-height:1}
-.dcard .dsmall{font-size:.72rem;color:var(--muted)}
-.dcard .names{font-size:.82rem;font-weight:500;line-height:1.35;word-break:break-word;display:flex;flex-direction:column;gap:2px}
+.dcard:hover{transform:translateY(-3px);box-shadow:0 5px 0 rgba(27,51,88,.15)}
+.dcard:focus-visible{outline:3px solid var(--duty-header);outline-offset:2px}
+.dcard .dnum{font-family:'Secular One';font-size:1.15rem;line-height:1;color:var(--duty-header)}
+.dcard .names{font-size:.8rem;font-weight:500;line-height:1.3;word-break:break-word;display:flex;flex-direction:column;gap:2px}
 .dcard .pname{display:flex;align-items:center;gap:5px}
-.mini-av{width:18px;height:18px;border-radius:50%;background:var(--tile);color:#fff;font-size:.62rem;display:inline-flex;align-items:center;justify-content:center;flex:none}
-.dcard .course{margin-top:auto;font-size:.72rem;font-weight:700;border-radius:999px;padding:2px 8px;align-self:flex-start;color:#fff}
-.dcard.c195{background:var(--c195-soft);border-color:var(--c195)}
-.dcard.c195 .course{background:var(--c195)}
-.dcard.c194{background:var(--c194-soft);border-color:var(--c194)}
-.dcard.c194 .course{background:var(--c194)}
+.mini-av{width:16px;height:16px;border-radius:50%;background:var(--duty-header);color:#fff;font-size:.6rem;display:inline-flex;align-items:center;justify-content:center;flex:none}
 .dcard.is-today{outline:3px solid var(--lemon);outline-offset:1px}
 .dcard.empty-slot{visibility:hidden;pointer-events:none}
-.dcard .plus{color:#B4BCB0;font-size:1.5rem;margin:auto}
+.dcard .plus{color:#B4C0D4;font-size:1.5rem;margin:auto}
+.duty-mini{font-size:.76rem;font-weight:500;line-height:1.3;border-radius:8px;padding:4px 6px;border-right:3px solid transparent}
+.duty-mini .mini-note{display:block;font-size:.68rem;color:var(--muted);font-style:italic;margin-top:2px}
+.duty-mini.status-done{background:#DDF3E4;border-right-color:var(--good)}
+.duty-mini.status-pending{background:#FDF0C9;border-right-color:var(--mid)}
+.duty-mini.status-unassigned{background:#EAEDF1;border-right-color:var(--muted);color:var(--muted);font-style:italic}
+.status-pill{font-size:.72rem;font-weight:700;border-radius:999px;padding:3px 10px;white-space:nowrap;display:inline-block}
+.status-pill.status-done{background:#DDF3E4;color:#22603C}
+.status-pill.status-pending{background:#FDF0C9;color:#7A5B00}
+.status-pill.status-unassigned{background:#EAEDF1;color:var(--muted)}
 @media(max-width:640px){
   .duty-grid{grid-template-columns:1fr}
   .duty-grid .hd{display:none}
-  .dcard{min-height:auto;flex-direction:row;align-items:center;gap:10px;flex-wrap:wrap}
-  .dcard .course{margin-top:0}
+  .dcard{min-height:auto}
   .dcard.empty-slot{display:none}
 }
+
+/* ===== חלון עריכת תורנויות ליום ===== */
+.duty-entry-row{border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:10px;background:#FBFCFA}
+.der-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.der-badge{font-size:.78rem;font-weight:700;color:var(--duty-header,var(--tile-dark))}
+.field-row{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.check-label{display:flex;align-items:center;gap:6px;font-size:.9rem;cursor:pointer}
+.check-label input{width:auto}
+
+/* ===== אזור גרירה/העלאה ===== */
+.upload-box{border:2px dashed var(--tile);border-radius:14px;padding:18px;background:#F4F8F2;margin-bottom:16px;display:flex;flex-wrap:wrap;gap:14px;align-items:center;transition:background .15s,border-color .15s}
+.upload-box.dragover{background:#E4F0E6;border-color:var(--good)}
+.upload-box input[type=file]{display:none}
+.upload-icon{font-size:2.2rem;flex:none}
+.upload-text{flex:1;min-width:200px}
+.upload-hint{font-size:.78rem;color:var(--muted);margin-top:4px}
+.upload-status-msg{margin-top:8px;font-size:.9rem;font-weight:500;padding:8px 12px;border-radius:10px}
+.upload-status-msg.ok{background:#DDF3E4;color:#22603C}
+.upload-status-msg.bad{background:#FCE6E4;color:#8A2A22}
 
 .week-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
 .wcard{border:2px solid var(--line);border-radius:14px;background:#FBFCFA;padding:14px;cursor:pointer;text-align:right;font-family:'Rubik';transition:transform .12s,box-shadow .12s;display:flex;flex-direction:column;gap:5px}
@@ -502,7 +528,8 @@ function handleCharImgError(img,emoji){
 let state={ratings:{},duties:{},orders:{},issues:[],hs:{},chal:{},players:{}};
 let currentScores={},currentPage='home';
 let rankTab='daily',offTab='duty',gamesTab='play';
-let dutyFilter='all',orderFilter='all',issueFilter='all',issueSearch='';
+let dutyFilter='all',orderFilter='all',issueFilter='all',issueSearch='',dutyView='month';
+const genId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 let dutyMonth=new Date().getMonth(),dutyYear=new Date().getFullYear(),weeksToShowO=10;
 let currentPlayer=null;
 
@@ -818,30 +845,61 @@ function renderOfficers(){
   buildOffTabs();
   const body=document.getElementById('offBody');
   if(offTab==='duty'){
-    body.innerHTML=`<div class="upload-box">
-        <button class="btn small" id="dutyUploadBtn">📤 העלאת קובץ תורנים (Excel/CSV)</button>
+    const now=new Date();
+    const yearsInData=Object.keys(state.duties).map(k=>+k.slice(0,4));
+    const minY=Math.min(now.getFullYear()-1,...(yearsInData.length?yearsInData:[now.getFullYear()]));
+    const maxY=Math.max(now.getFullYear()+1,...(yearsInData.length?yearsInData:[now.getFullYear()]));
+    const yearOpts=[];for(let y=minY;y<=maxY;y++)yearOpts.push(y);
+    body.innerHTML=`<div class="duty-panel">
+      <div class="upload-box" id="dutyDropzone">
+        <div class="upload-icon">📤</div>
+        <div class="upload-text">
+          <b>גררו לכאן קובץ Excel</b> או <button class="btn small" type="button" id="dutyUploadBtn">בחירת קובץ</button>
+          <div class="upload-hint">מזהה עמודות לפי כותרות: תאריך · יום בשבוע · תורן 1 · תורן 2 · בוצע/הערות. קבצים נתמכים: .xlsx ‎.xls ‎.csv — מעובד בדפדפן בלבד, בלי שליחה לשרת.</div>
+        </div>
         <input type="file" id="dutyFile" accept=".xlsx,.xls,.csv">
-        <span class="upload-status">העמודות הצפויות: תאריך · תורן 1 · תורן 2 · קורס. העלאת קובץ חדש מחליפה את כל לוח התורנים הקיים.</span>
       </div>
-      <p class="sub" id="dutyMonthTitle"></p>
-      <div class="legend" style="margin:0 0 12px">
-        <span><span class="dot" style="background:var(--c195);border-color:var(--c195)"></span>כחול = קורס 195</span>
-        <span><span class="dot" style="background:var(--c194);border-color:var(--c194)"></span>אדום = קורס 194</span>
-        <span class="muted">· לחצו על יום כדי לשבץ תורנים ידנית</span>
+      <div id="dutyUploadStatus"></div>
+      <div class="stat-row">
+        <div class="stat-chip"><span class="ico">🟢</span>בוצע</div>
+        <div class="stat-chip"><span class="ico">🟡</span>טרם בוצע</div>
+        <div class="stat-chip"><span class="ico">⚪</span>טרם שובץ</div>
       </div>
       <div class="toolbar">
+        <button class="tab-btn${dutyView==='month'?' on':''}" data-view="month">🗓️ תצוגת חודש</button>
+        <button class="tab-btn${dutyView==='list'?' on':''}" data-view="list">📋 תצוגת רשימה</button>
+        <span style="flex:1"></span>
+        <button class="btn small secondary" id="dutyExport">⬇️ ייצוא לאקסל</button>
+      </div>
+      <div class="toolbar">
+        <select class="search-input" id="dutyMonthSel">${MONTH_NAMES.map((m,i)=>`<option value="${i}" ${i===dutyMonth?'selected':''}>${m}</option>`).join('')}</select>
+        <select class="search-input" id="dutyYearSel">${yearOpts.map(y=>`<option value="${y}" ${y===dutyYear?'selected':''}>${y}</option>`).join('')}</select>
+        <button class="btn small secondary" id="dutyToday">היום</button>
+        <button class="btn small secondary" id="dutyPrev">◀</button>
+        <button class="btn small secondary" id="dutyNext">▶</button>
+        <span style="flex:1"></span>
         <button class="chip on" data-filter="all">כל הקורסים</button>
         <button class="chip" data-filter="195">קורס 195 בלבד</button>
         <button class="chip" data-filter="194">קורס 194 בלבד</button>
-        <span style="flex:1"></span>
-        <button class="btn small secondary" id="dutyPrev">◀ חודש קודם</button>
-        <button class="btn small secondary" id="dutyNext">חודש הבא ▶</button>
       </div>
-      <div class="duty-grid" id="dutyGrid"></div>`;
+      <p class="sub" id="dutyMonthTitle"></p>
+      <div id="dutyViewBody"></div>
+      </div>`;
     document.getElementById('dutyUploadBtn').onclick=()=>document.getElementById('dutyFile').click();
-    document.getElementById('dutyFile').addEventListener('change',onDutyFileChosen);
-    document.getElementById('dutyPrev').onclick=()=>{dutyMonth--;if(dutyMonth<0){dutyMonth=11;dutyYear--;}renderDuty();};
-    document.getElementById('dutyNext').onclick=()=>{dutyMonth++;if(dutyMonth>11){dutyMonth=0;dutyYear++;}renderDuty();};
+    document.getElementById('dutyFile').addEventListener('change',e=>{processDutyFile(e.target.files[0]);e.target.value='';});
+    document.getElementById('dutyExport').onclick=exportDutiesToExcel;
+    const dz=document.getElementById('dutyDropzone');
+    dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('dragover');});
+    dz.addEventListener('dragleave',()=>dz.classList.remove('dragover'));
+    dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('dragover');
+      if(e.dataTransfer.files&&e.dataTransfer.files[0])processDutyFile(e.dataTransfer.files[0]);});
+    body.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{dutyView=b.dataset.view;renderDuty();
+      body.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('on',x===b));});
+    document.getElementById('dutyMonthSel').onchange=e=>{dutyMonth=+e.target.value;renderDuty();};
+    document.getElementById('dutyYearSel').onchange=e=>{dutyYear=+e.target.value;renderDuty();};
+    document.getElementById('dutyToday').onclick=()=>{dutyMonth=new Date().getMonth();dutyYear=new Date().getFullYear();renderOfficers();};
+    document.getElementById('dutyPrev').onclick=()=>{dutyMonth--;if(dutyMonth<0){dutyMonth=11;dutyYear--;}renderOfficers();};
+    document.getElementById('dutyNext').onclick=()=>{dutyMonth++;if(dutyMonth>11){dutyMonth=0;dutyYear++;}renderOfficers();};
     body.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{
       dutyFilter=b.dataset.filter;
       body.querySelectorAll('[data-filter]').forEach(x=>{x.className='chip'+(x===b?' on'+(x.dataset.filter!=='all'?' c'+x.dataset.filter:''):'');});
@@ -869,8 +927,34 @@ function renderOfficers(){
     renderOrders();
   }
 }
+function normalizeDuties(){
+  Object.keys(state.duties).forEach(k=>{
+    const v=state.duties[k];
+    if(Array.isArray(v)){
+      v.forEach(e=>{if(!e.id)e.id=genId();if(e.course==null)e.course=195;});
+      if(!v.length)delete state.duties[k];
+      return;
+    }
+    if(v&&typeof v==='object'){
+      state.duties[k]=[{id:genId(),n1:v.n1||'',n2:v.n2||'',course:v.course||195,notes:v.notes||'',done:!!v.done}];
+    } else delete state.duties[k];
+  });
+}
+function dutyStatus(e){
+  if(!e.n1&&!e.n2)return 'unassigned';
+  return e.done?'done':'pending';
+}
+function dutyEntriesFor(k){
+  let list=state.duties[k]||[];
+  if(dutyFilter!=='all')list=list.filter(e=>String(e.course)===dutyFilter);
+  return list;
+}
 function renderDuty(){
+  normalizeDuties();
   document.getElementById('dutyMonthTitle').textContent=`${MONTH_NAMES[dutyMonth]} ${dutyYear} — כל ימות השבוע`;
+  const body=document.getElementById('dutyViewBody');
+  if(dutyView==='list'){renderDutyList(body);return;}
+  body.innerHTML=`<div class="duty-grid" id="dutyGrid"></div>`;
   const grid=document.getElementById('dutyGrid');
   grid.innerHTML=WORK_DAYS.map(d=>`<div class="hd">${d}</div>`).join('');
   const daysIn=new Date(dutyYear,dutyMonth+1,0).getDate();
@@ -878,52 +962,89 @@ function renderDuty(){
   for(let i=0;i<first;i++)grid.innerHTML+='<div class="dcard empty-slot"></div>';
   for(let d=1;d<=daysIn;d++){
     const date=new Date(dutyYear,dutyMonth,d),w=date.getDay();
-    const k=dkey(date),rec=state.duties[k];
-    if(dutyFilter!=='all'&&(!rec||String(rec.course)!==dutyFilter)){
-      grid.innerHTML+='<div class="dcard empty-slot"></div>';continue;}
-    const cls=rec?' c'+rec.course:'',today=k===todayKey()?' is-today':'';
-    const body=rec
-      ?`<div class="names"><span class="pname"><span class="mini-av">${initials(rec.n1)}</span>${escapeHtml(rec.n1)}</span><span class="pname"><span class="mini-av">${initials(rec.n2)}</span>${escapeHtml(rec.n2)}</span></div><div class="course">קורס ${rec.course}</div>`
-      :`<div class="plus">＋</div>`;
-    grid.innerHTML+=`<button class="dcard${cls}${today}" data-day="${k}">
-      <div class="dnum">${d}</div><div class="dsmall">יום ${WORK_DAYS[w]}${k===todayKey()?' · היום':''}</div>${body}</button>`;
+    const k=dkey(date),entries=dutyEntriesFor(k);
+    const today=k===todayKey()?' is-today':'';
+    const body2=entries.length?entries.map(e=>{
+      const st=dutyStatus(e);
+      const nameHtml=(e.n1||e.n2)
+        ?`<div class="names"><span class="pname"><span class="mini-av">${initials(e.n1)}</span>${escapeHtml(e.n1||'—')}</span><span class="pname"><span class="mini-av">${initials(e.n2)}</span>${escapeHtml(e.n2||'—')}</span></div>`
+        :`<span>טרם שובץ</span>`;
+      return `<div class="duty-mini status-${st}">${nameHtml}${e.notes?`<span class="mini-note">📝 ${escapeHtml(e.notes)}</span>`:''}</div>`;
+    }).join(''):`<div class="plus">＋</div>`;
+    grid.innerHTML+=`<button class="dcard${today}" data-day="${k}" title="יום ${WORK_DAYS[w]}">
+      <div class="dnum">${d}</div>${body2}</button>`;
   }
-  grid.querySelectorAll('.dcard[data-day]').forEach(b=>b.onclick=()=>dutyModal(b.dataset.day));
+  grid.querySelectorAll('.dcard[data-day]').forEach(b=>b.onclick=()=>dayDutiesModal(b.dataset.day));
 }
-function dutyModal(k){
-  const rec=state.duties[k]||{n1:'',n2:'',course:195};
+function renderDutyList(container){
+  const daysIn=new Date(dutyYear,dutyMonth+1,0).getDate();
+  const rows=[];
+  for(let d=1;d<=daysIn;d++){
+    const date=new Date(dutyYear,dutyMonth,d),k=dkey(date);
+    dutyEntriesFor(k).forEach(e=>rows.push({date,k,e}));
+  }
+  if(!rows.length){container.innerHTML='<p class="muted">אין תורנויות מתוזמנות בחודש זה.</p>';return;}
+  container.innerHTML=`<div style="overflow-x:auto"><table class="hs-table"><tr><th>תאריך</th><th>יום</th><th>תורן 1</th><th>תורן 2</th><th>הערות</th><th>סטטוס</th></tr>
+    ${rows.map(r=>{const st=dutyStatus(r.e);
+      return `<tr class="duty-list-row" data-day="${r.k}" style="cursor:pointer">
+        <td>${r.date.getDate()} ב${MONTH_NAMES[dutyMonth]}</td>
+        <td>${WORK_DAYS[r.date.getDay()]}</td>
+        <td>${escapeHtml(r.e.n1||'—')}</td>
+        <td>${escapeHtml(r.e.n2||'—')}</td>
+        <td>${escapeHtml(r.e.notes||'')}</td>
+        <td><span class="status-pill status-${st}">${st==='done'?'✅ בוצע':st==='pending'?'🟡 טרם בוצע':'⚪ טרם שובץ'}</span></td>
+      </tr>`;}).join('')}
+  </table></div>`;
+  container.querySelectorAll('.duty-list-row').forEach(tr=>tr.onclick=()=>dayDutiesModal(tr.dataset.day));
+}
+function dayDutiesModal(k){
   const d=new Date(k+'T00:00:00');
-  const exists=!!state.duties[k];
-  openModal(`<h3>תורנות ליום ${WORK_DAYS[d.getDay()]||''}</h3>
-    <p class="sub">${d.getDate()} ב${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}</p>
-    <div class="field"><label for="mDate">תאריך</label><input type="date" id="mDate" value="${k}"></div>
-    <div class="field"><label for="n1">תורן ראשון</label><input id="n1" maxlength="24" value="${escapeHtml(rec.n1)}" placeholder="שם מלא"></div>
-    <div class="field"><label for="n2">תורן שני</label><input id="n2" maxlength="24" value="${escapeHtml(rec.n2)}" placeholder="שם מלא"></div>
-    <div class="field"><label>קורס</label><div class="course-pick" id="cp">
-      <button type="button" data-c="195" class="${rec.course==195?'on':''}">🔵 קורס 195</button>
-      <button type="button" data-c="194" class="${rec.course==194?'on':''}">🔴 קורס 194</button></div></div>
-    <div class="err" id="mErr"></div>
-    <div class="modal-actions">
-      <button class="btn" id="mSave">שמירה</button>
-      ${exists?'<button class="btn danger" id="mDel">מחיקה</button>':''}
-      <button class="btn secondary" id="mCancel">ביטול</button></div>`);
-  let course=rec.course;
-  modalEl.querySelectorAll('#cp button').forEach(b=>b.onclick=()=>{
-    course=+b.dataset.c;modalEl.querySelectorAll('#cp button').forEach(x=>x.classList.remove('on'));b.classList.add('on');});
-  document.getElementById('mCancel').onclick=closeModal;
-  if(exists)document.getElementById('mDel').onclick=()=>confirmBox('מחיקת תורנות','למחוק את התורנות של '+k+'? הפעולה תתעדכן אצל כולם.',
-    async()=>{delete state.duties[k];await saveShared('duties');renderDuty();toast('התורנות נמחקה','ok');});
-  document.getElementById('mSave').onclick=async()=>{
-    const n1=document.getElementById('n1').value.trim(),n2=document.getElementById('n2').value.trim();
-    const nk=document.getElementById('mDate').value,err=document.getElementById('mErr');
-    if(!n1||!n2){err.textContent='יש להזין את שמות שני התורנים.';err.classList.add('show');return;}
-    if(!nk){err.textContent='יש לבחור תאריך.';err.classList.add('show');return;}
-    const nd=new Date(nk+'T00:00:00');
-    if(nk!==k)delete state.duties[k];
-    state.duties[nk]={n1:n1.slice(0,24),n2:n2.slice(0,24),course};
-    dutyMonth=nd.getMonth();dutyYear=nd.getFullYear();
-    await saveShared('duties');closeModal();renderDuty();
-  };
+  let entries=(state.duties[k]||[]).map(e=>({...e}));
+  function syncFromDom(){
+    modalEl.querySelectorAll('.duty-entry-row').forEach((row,i)=>{
+      if(!entries[i])return;
+      entries[i].n1=row.querySelector('.de-n1').value.trim();
+      entries[i].n2=row.querySelector('.de-n2').value.trim();
+      entries[i].notes=row.querySelector('.de-notes').value.trim();
+      entries[i].done=row.querySelector('.de-done').checked;
+      entries[i].course=+row.querySelector('.de-course').value;
+    });
+  }
+  function draw(){
+    const rowsHtml=entries.map((e,i)=>`
+      <div class="duty-entry-row" data-i="${i}">
+        <div class="der-top"><span class="der-badge">תורנות ${i+1}</span>
+          <button type="button" class="btn small danger" data-del="${i}">מחיקה</button></div>
+        <div class="field"><label>תורן 1</label><input class="de-n1" maxlength="24" value="${escapeHtml(e.n1||'')}" placeholder="שם מלא"></div>
+        <div class="field"><label>תורן 2</label><input class="de-n2" maxlength="24" value="${escapeHtml(e.n2||'')}" placeholder="שם מלא"></div>
+        <div class="field"><label>הערות</label><input class="de-notes" maxlength="120" value="${escapeHtml(e.notes||'')}" placeholder="לא חובה"></div>
+        <div class="field-row">
+          <label class="check-label"><input type="checkbox" class="de-done" ${e.done?'checked':''}> בוצע</label>
+          <select class="de-course"><option value="195" ${e.course==195?'selected':''}>קורס 195</option><option value="194" ${e.course==194?'selected':''}>קורס 194</option></select>
+        </div>
+      </div>`).join('');
+    openModal(`<h3>תורנויות ליום ${WORK_DAYS[d.getDay()]||''}</h3>
+      <p class="sub">${d.getDate()} ב${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}</p>
+      <div id="dutyEntries">${entries.length?rowsHtml:'<p class="muted">אין עדיין תורנות ביום זה.</p>'}</div>
+      <button type="button" class="btn small secondary" id="addEntry" style="margin-top:12px">➕ הוספת תורנות ליום זה</button>
+      <div class="err" id="dErr"></div>
+      <div class="modal-actions"><button class="btn" id="dSave">שמירת הכול</button>
+      <button class="btn secondary" id="dCancel">ביטול</button></div>`,true);
+    document.getElementById('dCancel').onclick=closeModal;
+    document.getElementById('addEntry').onclick=()=>{syncFromDom();entries.push({id:genId(),n1:'',n2:'',course:195,notes:'',done:false});draw();};
+    modalEl.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{
+      syncFromDom();const idx=+b.dataset.del;
+      confirmBox('מחיקת תורנות','למחוק את התורנות הזו?',()=>{entries.splice(idx,1);draw();},'כן, למחוק');
+    });
+    document.getElementById('dSave').onclick=async()=>{
+      syncFromDom();
+      const err=document.getElementById('dErr');
+      if(entries.some(e=>!e.n1&&!e.n2)){err.textContent='כל תורנות שנוספה ידנית חייבת שם אחד לפחות (או למחוק אותה לפני השמירה).';err.classList.add('show');return;}
+      if(entries.length)state.duties[k]=entries;else delete state.duties[k];
+      await saveShared('duties');closeModal();renderDuty();toast('התורנויות נשמרו','ok');
+    };
+  }
+  draw();
 }
 
 /* ==================== ייבוא קובץ תורנים (Excel/CSV) ==================== */
@@ -935,11 +1056,18 @@ function parseDutyDateCell(v){
   if(typeof v==='number'&&isFinite(v))return dkey(excelSerialToDate(v));
   if(typeof v==='string'){
     const s=v.trim();
-    let m=s.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
-    if(m)return `${m[3]}-${pad(+m[2])}-${pad(+m[1])}`;
-    m=s.match(/^(\d{4})[./-](\d{1,2})[./-](\d{1,2})$/);
-    if(m)return `${m[1]}-${pad(+m[2])}-${pad(+m[3])}`;
-    const d=new Date(s);if(!isNaN(d))return dkey(d);
+    // פורמט יום/חודש/שנה (ישראלי) — נתמכת גם שנה בת 2 ספרות. הספרה הראשונה תמיד היום, השנייה תמיד החודש.
+    let m=s.match(/^(\d{1,2})[./\-](\d{1,2})[./\-](\d{2}|\d{4})$/);
+    if(m){
+      const dd=+m[1],mm=+m[2],yy=m[3].length===2?2000+ +m[3]:+m[3];
+      if(dd>=1&&dd<=31&&mm>=1&&mm<=12)return `${yy}-${pad(mm)}-${pad(dd)}`;
+      return null;
+    }
+    // פורמט ISO: שנה-חודש-יום
+    m=s.match(/^(\d{4})[./\-](\d{1,2})[./\-](\d{1,2})$/);
+    if(m){const dd=+m[3],mm=+m[2];if(dd>=1&&dd<=31&&mm>=1&&mm<=12)return `${m[1]}-${pad(mm)}-${pad(dd)}`;return null;}
+    // בכוונה לא נופלים בחזרה על new Date(s) — פירוש דו-משמעי כזה (למשל MM/DD אמריקאי)
+    // עלול להפוך "8 בספטמבר" ל"9 באוגוסט" בטעות. עדיף לדלג על השורה מאשר לנחש תאריך שגוי.
   }
   return null;
 }
@@ -956,39 +1084,158 @@ function findCol(headers,keys){
   }
   return -1;
 }
-function onDutyFileChosen(e){
-  const file=e.target.files&&e.target.files[0];e.target.value='';
+const DUTY_DONE_WORDS=/^(בוצע|כן|yes|done|true|✓|v|✔)$/i;
+function findDutyHeaderRow(rows){
+  const maxScan=Math.min(rows.length,15);
+  for(let r=0;r<maxScan;r++){
+    const headers=(rows[r]||[]).map(c=>String(c==null?'':c));
+    const dateI=findCol(headers,['תאריך','date']);
+    const n1I=findCol(headers,['תורן 1','תורן1','שם 1','שם ראשון','name1','תורן א']);
+    const n2I=findCol(headers,['תורן 2','תורן2','שם 2','שם שני','name2','תורן ב']);
+    if(dateI>=0&&(n1I>=0||n2I>=0)){
+      return {row:r,dateI,n1I,n2I,
+        dayI:findCol(headers,['יום בשבוע','יום','weekday','day']),
+        notesI:findCol(headers,['בוצע','הערות','status','notes','comment']),
+        courseI:findCol(headers,['קורס','course','group'])};
+    }
+  }
+  return null;
+}
+function findDutySheet(wb){
+  let best=null,bestScore=-1;
+  wb.SheetNames.forEach(name=>{
+    const sheet=wb.Sheets[name];
+    let rows;try{rows=XLSX.utils.sheet_to_json(sheet,{header:1,raw:true,defval:''});}catch(e){rows=[];}
+    const hdr=findDutyHeaderRow(rows);
+    const score=hdr?(2+(hdr.n1I>=0?1:0)+(hdr.n2I>=0?1:0)):0;
+    if(score>bestScore){bestScore=score;best={name,rows,hdr};}
+  });
+  return bestScore>0?best:null;
+}
+function setUploadStatus(html,kind){
+  const el=document.getElementById('dutyUploadStatus');if(!el)return;
+  el.innerHTML=html?`<div class="upload-status-msg ${kind||''}">${html}</div>`:'';
+}
+function processDutyFile(file){
   if(!file)return;
-  if(typeof XLSX==='undefined'){toast('מנוע קריאת האקסל לא נטען — בדקו חיבור לאינטרנט ונסו שוב','bad');return;}
+  if(!/\.(xlsx|xls|csv)$/i.test(file.name)){setUploadStatus('❌ סוג קובץ לא נתמך — יש להעלות קובץ ‎.xlsx‎, ‎.xls‎ או ‎.csv','bad');return;}
+  if(typeof XLSX==='undefined'){setUploadStatus('❌ מנוע קריאת האקסל לא נטען — בדקו חיבור לאינטרנט ונסו שוב','bad');return;}
+  setUploadStatus(`⏳ קורא את ${escapeHtml(file.name)}...`);
   const isCsv=/\.csv$/i.test(file.name);
   const reader=new FileReader();
+  reader.onerror=()=>setUploadStatus('❌ שגיאה בקריאת הקובץ','bad');
   reader.onload=()=>{
-    let rows;
+    let wb;
     try{
-      const wb=isCsv?XLSX.read(reader.result,{type:'string',cellDates:true}):XLSX.read(reader.result,{type:'array',cellDates:true});
-      const sheet=wb.Sheets[wb.SheetNames[0]];
-      rows=XLSX.utils.sheet_to_json(sheet,{header:1,raw:true,defval:''});
-    }catch(err){toast('לא ניתן לקרוא את הקובץ — ודאו שזהו קובץ Excel/CSV תקין','bad');return;}
-    if(!rows||rows.length<2){toast('הקובץ ריק או לא מכיל שורות נתונים','bad');return;}
-    const headers=rows[0];
-    let dateI=findCol(headers,['תאריך','date']),n1I=findCol(headers,['תורן 1','תורן1','שם 1','שם ראשון','name1']),
-        n2I=findCol(headers,['תורן 2','תורן2','שם 2','שם שני','name2']),courseI=findCol(headers,['קורס','course','group']);
-    if(dateI<0)dateI=0;if(n1I<0)n1I=1;if(n2I<0)n2I=2;if(courseI<0)courseI=3;
-    const newDuties={};let ok=0,skipped=0;
-    for(let i=1;i<rows.length;i++){
-      const row=rows[i];if(!row||!row.length)continue;
-      const dk=parseDutyDateCell(row[dateI]);
-      const n1=String(row[n1I]||'').trim(),n2=String(row[n2I]||'').trim();
-      if(!dk||!n1||!n2){skipped++;continue;}
-      newDuties[dk]={n1:n1.slice(0,24),n2:n2.slice(0,24),course:parseDutyCourse(row[courseI])};ok++;
+      // raw:true חיוני עבור CSV: מונע מ-SheetJS "לנחש" תאריכים דו-משמעיים בטקסט (למשל MM/DD אמריקאי)
+      // ומשאיר את הטקסט הגולמי לפענוח שלנו (parseDutyDateCell, יום ראשון תמיד). לקבצי xlsx/xls בינאריים
+      // זה לא פוגע — תאריכים אמיתיים שם מגיעים ממספר סידורי חד-משמעי ולא מטקסט מנוחש.
+      wb=isCsv?XLSX.read(reader.result,{type:'string',cellDates:true,raw:true}):XLSX.read(reader.result,{type:'array',cellDates:true,raw:true});
+    }catch(err){setUploadStatus('❌ הקובץ אינו תקין או פגום — ודאו שזהו קובץ Excel/CSV תקין','bad');return;}
+    if(!wb.SheetNames.length){setUploadStatus('❌ לא נמצאו גיליונות בקובץ','bad');return;}
+    const found=findDutySheet(wb);
+    if(!found){
+      const firstRows=(()=>{try{return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:true,defval:''});}catch(e){return [];}})();
+      const headers=(firstRows[0]||[]).map(c=>String(c==null?'':c));
+      const missing=[];
+      if(findCol(headers,['תאריך','date'])<0)missing.push('תאריך');
+      if(findCol(headers,['תורן 1','תורן1','שם 1','name1'])<0&&findCol(headers,['תורן 2','תורן2','שם 2','name2'])<0)missing.push('תורן 1 / תורן 2');
+      setUploadStatus(`❌ לא נמצאה טבלת תורנויות בקובץ. עמודות חסרות: ${missing.length?escapeHtml(missing.join(', ')):'לא זוהו כותרות מוכרות בשום גיליון'}`,'bad');
+      return;
     }
-    if(!ok){toast('לא נמצאו שורות תקינות בקובץ. ודאו את סדר העמודות: תאריך, תורן 1, תורן 2, קורס','bad');return;}
-    confirmBox('החלפת לוח התורנים',
-      `נמצאו <b>${ok}</b> תורנויות תקינות בקובץ${skipped?` (${skipped} שורות דולגו)`:''}. הפעולה תחליף את כל לוח התורנים הקיים ותעדכן אצל כולם. להמשיך?`,
-      async()=>{state.duties=newDuties;await saveShared('duties');renderDuty();toast(`הועלו ${ok} תורנויות בהצלחה`,'ok');},
-      'כן, להחליף');
+    const {rows,hdr}=found;
+    const out=[];const seen=new Set();
+    let invalidDate=0,emptyRows=0,duplicates=0,unassigned=0,ok=0;
+    for(let i=hdr.row+1;i<rows.length;i++){
+      const row=rows[i];
+      if(!row||row.every(c=>c===''||c==null)){emptyRows++;continue;}
+      const rawDate=row[hdr.dateI];
+      const dk=parseDutyDateCell(rawDate);
+      if(!dk){
+        if(rawDate===''||rawDate==null)emptyRows++;else{invalidDate++;out.push({status:'invalid',reason:'תאריך לא תקין: "'+escapeHtml(String(rawDate))+'"'});}
+        continue;
+      }
+      const n1=hdr.n1I>=0?String(row[hdr.n1I]||'').trim():'';
+      const n2=hdr.n2I>=0?String(row[hdr.n2I]||'').trim():'';
+      const rawNotes=hdr.notesI>=0?String(row[hdr.notesI]||'').trim():'';
+      const done=DUTY_DONE_WORDS.test(rawNotes);
+      const notes=done?'':rawNotes;
+      const course=hdr.courseI>=0?parseDutyCourse(row[hdr.courseI]):195;
+      const sig=dk+'|'+n1+'|'+n2+'|'+notes;
+      if(seen.has(sig)){duplicates++;continue;}
+      seen.add(sig);
+      if(!n1&&!n2)unassigned++;else ok++;
+      out.push({status:'ok',date:dk,n1:n1.slice(0,24),n2:n2.slice(0,24),notes:notes.slice(0,120),done,course});
+    }
+    if(!ok&&!unassigned){
+      setUploadStatus(`⚠️ לא נמצאו שורות תקינות בקובץ (${invalidDate} תאריכים לא תקינים, ${emptyRows} שורות ריקות)`,'bad');
+      return;
+    }
+    setUploadStatus(`✅ ${escapeHtml(file.name)} נקרא בהצלחה`,'ok');
+    showDutyPreview(file.name,out,{ok,unassigned,invalidDate,emptyRows,duplicates});
   };
   if(isCsv)reader.readAsText(file,'UTF-8');else reader.readAsArrayBuffer(file);
+}
+function showDutyPreview(filename,out,sum){
+  const validRows=out.filter(r=>r.status==='ok');
+  const rowsHtml=out.map(r=>{
+    if(r.status==='invalid')return `<tr><td colspan="5" class="muted">⏭️ שורה דולגה — ${r.reason}</td></tr>`;
+    const assigned=!!(r.n1||r.n2);
+    return `<tr><td>${r.date}</td><td>${escapeHtml(r.n1||'—')}</td><td>${escapeHtml(r.n2||'—')}</td><td>${escapeHtml(r.notes||'')}</td>
+      <td>${assigned?'✅ תקין':'⚪ טרם שובץ'}</td></tr>`;
+  }).join('');
+  openModal(`<h3>📋 תצוגה מקדימה — ${escapeHtml(filename)}</h3>
+    <div class="stat-row">
+      <div class="stat-chip"><span class="ico">📄</span>סה"כ שורות בקובץ <b>${sum.ok+sum.unassigned+sum.invalidDate+sum.emptyRows+sum.duplicates}</b></div>
+      <div class="stat-chip"><span class="ico">✅</span>נמצאו <b>${sum.ok}</b> תורנויות</div>
+      <div class="stat-chip"><span class="ico">⚪</span><b>${sum.unassigned}</b> טרם שובץ</div>
+      <div class="stat-chip"><span class="ico">⚠️</span><b>${sum.invalidDate}</b> תאריכים לא תקינים</div>
+      <div class="stat-chip"><span class="ico">⏭️</span><b>${sum.duplicates}</b> כפילויות דולגו</div>
+      <div class="stat-chip"><span class="ico">➖</span><b>${sum.emptyRows}</b> שורות ריקות דולגו</div>
+    </div>
+    <div style="max-height:280px;overflow:auto;border:1.5px solid var(--line);border-radius:10px;margin-top:10px">
+      <table class="hs-table"><tr><th>תאריך</th><th>תורן 1</th><th>תורן 2</th><th>הערות</th><th>סטטוס</th></tr>${rowsHtml}</table>
+    </div>
+    <p class="muted" style="margin-top:10px">הנתונים ימוזגו ללוח הקיים — תורנויות קודמות לא יימחקו. ערכים זהים שכבר קיימים לא יתווספו שוב.</p>
+    <div class="modal-actions"><button class="btn" id="dpConfirm">אישור וטעינה ללוח</button>
+    <button class="btn secondary" id="dpCancel">ביטול</button></div>`,true);
+  document.getElementById('dpCancel').onclick=closeModal;
+  document.getElementById('dpConfirm').onclick=async()=>{
+    let added=0;
+    validRows.forEach(r=>{
+      const existing=state.duties[r.date]=state.duties[r.date]||[];
+      const dupExisting=existing.some(e=>e.n1===r.n1&&e.n2===r.n2&&(e.notes||'')===(r.notes||''));
+      if(!dupExisting){existing.push({id:genId(),n1:r.n1,n2:r.n2,course:r.course,notes:r.notes,done:r.done});added++;}
+    });
+    await saveShared('duties');
+    closeModal();
+    toast(`יובאו ${added} תורנויות ללוח`,'ok');
+    if(validRows.length){
+      const first=[...validRows].sort((a,b)=>a.date.localeCompare(b.date))[0];
+      const fd=new Date(first.date+'T00:00:00');
+      dutyMonth=fd.getMonth();dutyYear=fd.getFullYear();
+    }
+    dutyView='month';
+    renderOfficers();
+  };
+}
+function exportDutiesToExcel(){
+  normalizeDuties();
+  const rows=[['תאריך','יום בשבוע','תורן 1','תורן 2','בוצע','הערות','קורס']];
+  Object.keys(state.duties).sort().forEach(k=>{
+    const d=new Date(k+'T00:00:00');
+    (state.duties[k]||[]).forEach(e=>{
+      rows.push([`${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`,WORK_DAYS[d.getDay()],
+        e.n1||'',e.n2||'',e.done?'כן':'לא',e.notes||'',e.course||'']);
+    });
+  });
+  if(rows.length===1){toast('אין נתונים לייצוא','bad');return;}
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:12},{wch:10},{wch:16},{wch:16},{wch:8},{wch:24},{wch:8}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'תורנים');
+  XLSX.writeFile(wb,'לוח_תורנים.xlsx');
+  toast('קובץ האקסל הורד בהצלחה','ok');
 }
 
 /* ==================== הזמנות ==================== */
@@ -1225,8 +1472,14 @@ function renderGlobalLeaderboard(){
 function countDutyShifts(username){
   const nm=(username||'').trim().toLowerCase();
   if(!nm)return 0;
-  return Object.values(state.duties).filter(d=>
-    (d.n1||'').trim().toLowerCase()===nm||(d.n2||'').trim().toLowerCase()===nm).length;
+  normalizeDuties();
+  let count=0;
+  Object.values(state.duties).forEach(list=>{
+    (list||[]).forEach(d=>{
+      if((d.n1||'').trim().toLowerCase()===nm||(d.n2||'').trim().toLowerCase()===nm)count++;
+    });
+  });
+  return count;
 }
 function renderProfile(){
   const wrap=document.getElementById('profileBody');
@@ -1744,6 +1997,7 @@ if(!FIREBASE_READY){
   try{const saved=JSON.parse(localStorage.getItem('mtb_player')||'null');if(saved&&saved.username)currentPlayer={username:saved.username,_pass:saved.password};}
   catch(e){/* אחסון מקומי לא זמין — פשוט מתחילים ללא שחקן שמור */}
   await loadShared();
+  normalizeDuties();
   if(currentPlayer){
     const p=state.players[currentPlayer.username];
     if(!p||p.password!==currentPlayer._pass){currentPlayer=null;try{localStorage.removeItem('mtb_player');}catch(e){}}
