@@ -865,6 +865,7 @@ function renderOfficers(){
         <button class="tab-btn${dutyView==='month'?' on':''}" data-view="month">🗓️ תצוגת חודש</button>
         <button class="tab-btn${dutyView==='list'?' on':''}" data-view="list">📋 תצוגת רשימה</button>
         <span style="flex:1"></span>
+        <button class="btn small secondary" id="dutyTests" title="הרצת בדיקות אוטומטיות על מנגנון הייבוא">🧪 בדיקות ייבוא</button>
         <button class="btn small secondary" id="dutyExport">⬇️ ייצוא לאקסל</button>
       </div>
       <div class="toolbar">
@@ -884,6 +885,7 @@ function renderOfficers(){
     document.getElementById('dutyUploadBtn').onclick=()=>document.getElementById('dutyFile').click();
     document.getElementById('dutyFile').addEventListener('change',e=>{processDutyFile(e.target.files[0]);e.target.value='';});
     document.getElementById('dutyExport').onclick=exportDutiesToExcel;
+    document.getElementById('dutyTests').onclick=showDutyTestResults;
     const dz=document.getElementById('dutyDropzone');
     dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('dragover');});
     dz.addEventListener('dragleave',()=>dz.classList.remove('dragover'));
@@ -927,12 +929,12 @@ function normalizeDuties(){
   Object.keys(state.duties).forEach(k=>{
     const v=state.duties[k];
     if(Array.isArray(v)){
-      v.forEach(e=>{if(!e.id)e.id=genId();if(e.course==null)e.course=195;});
+      v.forEach(e=>{if(!e.id)e.id=genId();if(e.course==null)e.course=195;if(!e.source)e.source='manual';});
       if(!v.length)delete state.duties[k];
       return;
     }
     if(v&&typeof v==='object'){
-      state.duties[k]=[{id:genId(),n1:v.n1||'',n2:v.n2||'',course:v.course||195,notes:v.notes||'',done:!!v.done}];
+      state.duties[k]=[{id:genId(),n1:v.n1||'',n2:v.n2||'',course:v.course||195,notes:v.notes||'',done:!!v.done,source:'manual'}];
     } else delete state.duties[k];
   });
 }
@@ -1024,7 +1026,7 @@ function dayDutiesModal(k){
       <div class="modal-actions"><button class="btn" id="dSave">שמירת הכול</button>
       <button class="btn secondary" id="dCancel">ביטול</button></div>`,true);
     document.getElementById('dCancel').onclick=closeModal;
-    document.getElementById('addEntry').onclick=()=>{syncFromDom();entries.push({id:genId(),n1:'',n2:'',course:195,notes:'',done:false});draw();};
+    document.getElementById('addEntry').onclick=()=>{syncFromDom();entries.push({id:genId(),n1:'',n2:'',course:195,notes:'',done:false,source:'manual'});draw();};
     modalEl.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{
       syncFromDom();const idx=+b.dataset.del;
       confirmBox('מחיקת תורנות','למחוק את התורנות הזו?',()=>{entries.splice(idx,1);draw();},'כן, למחוק');
@@ -1082,54 +1084,99 @@ function parseDutyCourse(v){
   if(s.includes('195'))return 195;
   return 195;
 }
-function findCol(headers,keys){
-  for(let i=0;i<headers.length;i++){
-    const h=String(headers[i]||'').trim().toLowerCase();
-    if(keys.some(k=>h.includes(k)))return i;
-  }
+// ==== זיהוי כותרות מדויק (בלי ניחוש עמודות, בלי התאמת תת-מחרוזת) ====
+// "יום בשבוע" חייב להיות בלתי-אפשרי מבחינה מבנית להיקרא כ"תורן 1"/"תורן 2": ההשוואה היא שוויון מלא
+// מול רשימה סגורה של כותרות מוכרות, אחרי ניקוי רווחים/ירידות שורה/תווים נסתרים — לא includes().
+function normalizeHeaderText(s){
+  return String(s==null?'':s)
+    .replace(/[\u200B-\u200F\u202A-\u202E\uFEFF\u00A0]/g,' ') // תווים נסתרים, סימוני RTL/LTR, רווח בלתי-שובר
+    .replace(/\s+/g,' ')
+    .trim()
+    .toLowerCase();
+}
+const DUTY_DATE_HEADERS=new Set(['תאריך','date']);
+const DUTY_N1_HEADERS=new Set(['תורן 1','תורן1','duty 1','duty1']);
+const DUTY_N2_HEADERS=new Set(['תורן 2','תורן2','duty 2','duty2']);
+function findExactCol(headers,set){
+  for(let i=0;i<headers.length;i++)if(set.has(normalizeHeaderText(headers[i])))return i;
   return -1;
 }
-const DUTY_DONE_WORDS=/^(בוצע|כן|yes|done|true|✓|v|✔)$/i;
 function findDutyHeaderRow(rows){
   const maxScan=Math.min(rows.length,15);
   for(let r=0;r<maxScan;r++){
-    const headers=(rows[r]||[]).map(c=>String(c==null?'':c));
-    const dateI=findCol(headers,['תאריך','date']);
-    const n1I=findCol(headers,['תורן 1','תורן1','שם 1','שם ראשון','name1','תורן א']);
-    const n2I=findCol(headers,['תורן 2','תורן2','שם 2','שם שני','name2','תורן ב']);
-    if(dateI>=0&&(n1I>=0||n2I>=0)){
-      return {row:r,dateI,n1I,n2I,
-        dayI:findCol(headers,['יום בשבוע','יום','weekday','day']),
-        notesI:findCol(headers,['בוצע','הערות','status','notes','comment']),
-        courseI:findCol(headers,['קורס','course','group'])};
-    }
+    const headers=rows[r]||[];
+    const dateI=findExactCol(headers,DUTY_DATE_HEADERS);
+    const n1I=findExactCol(headers,DUTY_N1_HEADERS);
+    const n2I=findExactCol(headers,DUTY_N2_HEADERS);
+    // שלושת העמודות חייבות להימצא יחד באותה שורה — אחרת זו לא שורת הכותרות האמיתית.
+    if(dateI>=0&&n1I>=0&&n2I>=0)return {row:r,dateI,n1I,n2I};
   }
   return null;
 }
 function findDutySheet(wb){
-  let best=null,bestScore=-1;
-  wb.SheetNames.forEach(name=>{
+  for(const name of wb.SheetNames){
     const sheet=wb.Sheets[name];
     let rows;try{rows=XLSX.utils.sheet_to_json(sheet,{header:1,raw:true,defval:''});}catch(e){rows=[];}
     const hdr=findDutyHeaderRow(rows);
-    const score=hdr?(2+(hdr.n1I>=0?1:0)+(hdr.n2I>=0?1:0)):0;
-    if(score>bestScore){bestScore=score;best={name,rows,hdr};}
-  });
-  return bestScore>0?best:null;
+    if(hdr)return {name,rows,hdr};
+  }
+  return null;
 }
 function setUploadStatus(html,kind){
   const el=document.getElementById('dutyUploadStatus');if(!el)return;
   el.innerHTML=html?`<div class="upload-status-msg ${kind||''}">${html}</div>`:'';
 }
+// פונקציה טהורה (בלי DOM/רשת) שמפענחת שורות גיליון לרשומות תורנות ייחודיות — ניתנת לבדיקה ישירה ב-runDutyImportTests().
+function parseDutyRows(rows,hdr){
+  const uniqueMap=new Map(); // uniqueKey = dateKey|person1|person2 -> record; Map מבטיח שכל שורה תיצור רשומה אחת בלבד
+  let invalidDate=0,emptyRows=0,duplicatesInFile=0;
+  const invalidDetails=[];
+  for(let i=hdr.row+1;i<rows.length;i++){
+    const row=rows[i];
+    if(!row||row.every(c=>c===''||c==null)){emptyRows++;continue;}
+    const rawDate=row[hdr.dateI];
+    const dateKey=parseDutyDateCell(rawDate);
+    if(!dateKey){
+      if(rawDate===''||rawDate==null)emptyRows++;
+      else{invalidDate++;invalidDetails.push({reason:`תאריך לא תקין: "${String(rawDate)}"`});}
+      continue;
+    }
+    const person1=String(row[hdr.n1I]==null?'':row[hdr.n1I]).trim().slice(0,24);
+    const person2=String(row[hdr.n2I]==null?'':row[hdr.n2I]).trim().slice(0,24);
+    const uniqueKey=`${dateKey}|${person1}|${person2}`;
+    if(uniqueMap.has(uniqueKey)){duplicatesInFile++;continue;}
+    uniqueMap.set(uniqueKey,{dateKey,date:formatDDMMYYYY(dateKey),person1,person2});
+  }
+  return {records:[...uniqueMap.values()],invalidDate,emptyRows,duplicatesInFile,invalidDetails};
+}
+// מחיל רשומות מיובאות על state.duties: מנקה קודם כל רשומה שמקורה בייבוא קודם (ולא נוגע ברשומות ידניות),
+// ואז מוסיף את הסט החדש — כך שהעלאת קובץ מעודכן תמיד מחליפה את הייבוא הקודם ולא צוברת כפילויות/נתונים ישנים.
+function applyImportedRecords(records){
+  Object.keys(state.duties).forEach(k=>{
+    state.duties[k]=(state.duties[k]||[]).filter(e=>e.source!=='import');
+    if(!state.duties[k].length)delete state.duties[k];
+  });
+  let added=0;
+  records.forEach(r=>{
+    const list=state.duties[r.dateKey]=state.duties[r.dateKey]||[];
+    // איחוד מול רשומה ידנית זהה קיימת (אותו זוג שמות) — לא נוצרת כפילות בין רשימת האקסל לרשימה הידנית.
+    const dup=list.some(e=>(e.n1||'').trim()===r.person1&&(e.n2||'').trim()===r.person2);
+    if(!dup){list.push({id:genId(),n1:r.person1,n2:r.person2,course:195,notes:'',done:false,source:'import'});added++;}
+  });
+  return added;
+}
+let dutyImportBusy=false; // מגן מפני הפעלה כפולה של תהליך הייבוא (למשל לחיצה כפולה / אירוע כפול)
 function processDutyFile(file){
-  if(!file)return;
+  if(!file||dutyImportBusy)return;
   if(!/\.(xlsx|xls|csv)$/i.test(file.name)){setUploadStatus('❌ סוג קובץ לא נתמך — יש להעלות קובץ ‎.xlsx‎, ‎.xls‎ או ‎.csv','bad');return;}
   if(typeof XLSX==='undefined'){setUploadStatus('❌ מנוע קריאת האקסל לא נטען — בדקו חיבור לאינטרנט ונסו שוב','bad');return;}
+  dutyImportBusy=true;
   setUploadStatus(`⏳ קורא את ${escapeHtml(file.name)}...`);
   const isCsv=/\.csv$/i.test(file.name);
   const reader=new FileReader();
-  reader.onerror=()=>setUploadStatus('❌ שגיאה בקריאת הקובץ','bad');
+  reader.onerror=()=>{dutyImportBusy=false;setUploadStatus('❌ שגיאה בקריאת הקובץ','bad');};
   reader.onload=()=>{
+    dutyImportBusy=false;
     let wb;
     try{
       // raw:true חיוני עבור CSV: מונע מ-SheetJS "לנחש" תאריכים דו-משמעיים בטקסט (למשל MM/DD אמריקאי)
@@ -1141,88 +1188,108 @@ function processDutyFile(file){
     const found=findDutySheet(wb);
     if(!found){
       const firstRows=(()=>{try{return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:true,defval:''});}catch(e){return [];}})();
-      const headers=(firstRows[0]||[]).map(c=>String(c==null?'':c));
+      const headers=firstRows[0]||[];
       const missing=[];
-      if(findCol(headers,['תאריך','date'])<0)missing.push('תאריך');
-      if(findCol(headers,['תורן 1','תורן1','שם 1','name1'])<0&&findCol(headers,['תורן 2','תורן2','שם 2','name2'])<0)missing.push('תורן 1 / תורן 2');
+      if(findExactCol(headers,DUTY_DATE_HEADERS)<0)missing.push('תאריך');
+      if(findExactCol(headers,DUTY_N1_HEADERS)<0)missing.push('תורן 1');
+      if(findExactCol(headers,DUTY_N2_HEADERS)<0)missing.push('תורן 2');
       setUploadStatus(`❌ לא נמצאה טבלת תורנויות בקובץ. עמודות חסרות: ${missing.length?escapeHtml(missing.join(', ')):'לא זוהו כותרות מוכרות בשום גיליון'}`,'bad');
       return;
     }
     const {rows,hdr}=found;
-    const out=[];const seen=new Set();
-    let invalidDate=0,emptyRows=0,duplicates=0,unassigned=0,ok=0;
-    for(let i=hdr.row+1;i<rows.length;i++){
-      const row=rows[i];
-      if(!row||row.every(c=>c===''||c==null)){emptyRows++;continue;}
-      const rawDate=row[hdr.dateI];
-      const dk=parseDutyDateCell(rawDate);
-      if(!dk){
-        if(rawDate===''||rawDate==null)emptyRows++;else{invalidDate++;out.push({status:'invalid',reason:'תאריך לא תקין: "'+escapeHtml(String(rawDate))+'"'});}
-        continue;
-      }
-      const n1=hdr.n1I>=0?String(row[hdr.n1I]||'').trim():'';
-      const n2=hdr.n2I>=0?String(row[hdr.n2I]||'').trim():'';
-      const rawNotes=hdr.notesI>=0?String(row[hdr.notesI]||'').trim():'';
-      const done=DUTY_DONE_WORDS.test(rawNotes);
-      const notes=done?'':rawNotes;
-      const course=hdr.courseI>=0?parseDutyCourse(row[hdr.courseI]):195;
-      const sig=dk+'|'+n1+'|'+n2+'|'+notes;
-      if(seen.has(sig)){duplicates++;continue;}
-      seen.add(sig);
-      if(!n1&&!n2)unassigned++;else ok++;
-      out.push({status:'ok',date:dk,n1:n1.slice(0,24),n2:n2.slice(0,24),notes:notes.slice(0,120),done,course});
-    }
-    if(!ok&&!unassigned){
+    const {records,invalidDate,emptyRows,duplicatesInFile,invalidDetails}=parseDutyRows(rows,hdr);
+    if(!records.length){
       setUploadStatus(`⚠️ לא נמצאו שורות תקינות בקובץ (${invalidDate} תאריכים לא תקינים, ${emptyRows} שורות ריקות)`,'bad');
       return;
     }
     setUploadStatus(`✅ ${escapeHtml(file.name)} נקרא בהצלחה`,'ok');
-    showDutyPreview(file.name,out,{ok,unassigned,invalidDate,emptyRows,duplicates});
+    showDutyPreview(file.name,records,{invalidDate,emptyRows,duplicatesInFile,invalidDetails});
   };
   if(isCsv)reader.readAsText(file,'UTF-8');else reader.readAsArrayBuffer(file);
 }
-function showDutyPreview(filename,out,sum){
-  const validRows=out.filter(r=>r.status==='ok');
-  const rowsHtml=out.map(r=>{
-    if(r.status==='invalid')return `<tr><td colspan="5" class="muted">⏭️ שורה דולגה — ${r.reason}</td></tr>`;
-    const assigned=!!(r.n1||r.n2);
-    return `<tr><td>${r.date}</td><td>${escapeHtml(r.n1||'—')}</td><td>${escapeHtml(r.n2||'—')}</td><td>${escapeHtml(r.notes||'')}</td>
-      <td>${assigned?'✅ תקין':'⚪ טרם שובץ'}</td></tr>`;
-  }).join('');
+function showDutyPreview(filename,records,sum){
+  const sorted=[...records].sort((a,b)=>a.dateKey.localeCompare(b.dateKey));
+  const rowsHtml=sorted.map(r=>
+    `<tr><td>${r.date}</td><td>${r.person1?escapeHtml(r.person1):'טרם שובץ'}</td><td>${r.person2?escapeHtml(r.person2):'טרם שובץ'}</td></tr>`
+  ).join('')+sum.invalidDetails.map(d=>`<tr><td colspan="3" class="muted">⏭️ שורה דולגה — ${escapeHtml(d.reason)}</td></tr>`).join('');
   openModal(`<h3>📋 תצוגה מקדימה — ${escapeHtml(filename)}</h3>
     <div class="stat-row">
-      <div class="stat-chip"><span class="ico">📄</span>סה"כ שורות בקובץ <b>${sum.ok+sum.unassigned+sum.invalidDate+sum.emptyRows+sum.duplicates}</b></div>
-      <div class="stat-chip"><span class="ico">✅</span>נמצאו <b>${sum.ok}</b> תורנויות</div>
-      <div class="stat-chip"><span class="ico">⚪</span><b>${sum.unassigned}</b> טרם שובץ</div>
+      <div class="stat-chip"><span class="ico">✅</span>נמצאו <b>${records.length}</b> תורנויות ייחודיות</div>
       <div class="stat-chip"><span class="ico">⚠️</span><b>${sum.invalidDate}</b> תאריכים לא תקינים</div>
-      <div class="stat-chip"><span class="ico">⏭️</span><b>${sum.duplicates}</b> כפילויות דולגו</div>
+      <div class="stat-chip"><span class="ico">⏭️</span><b>${sum.duplicatesInFile}</b> כפילויות בקובץ דולגו</div>
       <div class="stat-chip"><span class="ico">➖</span><b>${sum.emptyRows}</b> שורות ריקות דולגו</div>
     </div>
     <div style="max-height:280px;overflow:auto;border:1.5px solid var(--line);border-radius:10px;margin-top:10px">
-      <table class="hs-table"><tr><th>תאריך</th><th>תורן 1</th><th>תורן 2</th><th>הערות</th><th>סטטוס</th></tr>${rowsHtml}</table>
+      <table class="hs-table"><tr><th>תאריך</th><th>תורן 1</th><th>תורן 2</th></tr>${rowsHtml}</table>
     </div>
-    <p class="muted" style="margin-top:10px">הנתונים ימוזגו ללוח הקיים — תורנויות קודמות לא יימחקו. ערכים זהים שכבר קיימים לא יתווספו שוב.</p>
+    <p class="muted" style="margin-top:10px">הקובץ הזה <b>יחליף</b> את כל התורנויות שיובאו מקובץ קודם (תורנויות שנוספו ידנית לא יימחקו).</p>
     <div class="modal-actions"><button class="btn" id="dpConfirm">אישור וטעינה ללוח</button>
     <button class="btn secondary" id="dpCancel">ביטול</button></div>`,true);
   document.getElementById('dpCancel').onclick=closeModal;
-  document.getElementById('dpConfirm').onclick=async()=>{
-    let added=0;
-    validRows.forEach(r=>{
-      const existing=state.duties[r.date]=state.duties[r.date]||[];
-      const dupExisting=existing.some(e=>e.n1===r.n1&&e.n2===r.n2&&(e.notes||'')===(r.notes||''));
-      if(!dupExisting){existing.push({id:genId(),n1:r.n1,n2:r.n2,course:r.course,notes:r.notes,done:r.done});added++;}
-    });
+  const confirmBtn=document.getElementById('dpConfirm');
+  confirmBtn.onclick=async()=>{
+    if(confirmBtn.disabled)return; // מניעת הפעלה כפולה מלחיצה כפולה
+    confirmBtn.disabled=true;
+    const added=applyImportedRecords(records);
     await saveShared('duties');
     closeModal();
-    toast(`יובאו ${added} תורנויות ללוח`,'ok');
-    if(validRows.length){
-      const first=[...validRows].sort((a,b)=>a.date.localeCompare(b.date))[0];
-      const fd=new Date(first.date+'T00:00:00');
+    toast(`נטענו ${added} תורנויות ללוח (הוחלף ייבוא קודם)`,'ok');
+    const first=sorted[0];
+    if(first){
+      const fd=new Date(first.dateKey+'T00:00:00');
       dutyMonth=fd.getMonth();dutyYear=fd.getFullYear();
     }
     dutyView='month';
     renderOfficers();
   };
+}
+/* ==================== בדיקות אוטומטיות לייבוא תורנים ==================== */
+function runDutyImportTests(){
+  const results=[];
+  const check=(name,cond)=>results.push({name,pass:!!cond});
+  check('1) "8.9.26" יוצר רק את המפתח 2026-09-08',parseDutyDateCell('8.9.26')==='2026-09-08');
+  check('2) "8.9.26" אינו יוצר רשומה ב-2026-08-09',parseDutyDateCell('8.9.26')!=='2026-08-09');
+  check('3) "11.10.26" מופיע רק ב-11 באוקטובר (2026-10-11)',parseDutyDateCell('11.10.26')==='2026-10-11');
+  check('4) "10.11.26" מופיע רק ב-10 בנובמבר (2026-11-10)',parseDutyDateCell('10.11.26')==='2026-11-10');
+  const hdrRow=['תאריך','יום בשבוע','תורן 1','תורן 2','בוצע / הערות'];
+  const hdr=findDutyHeaderRow([hdrRow]);
+  check('5) עמודת "יום בשבוע" לעולם אינה מזוהה כתורן 1',!!hdr&&hdr.n1I===2);
+  check('5) עמודת "יום בשבוע" לעולם אינה מזוהה כתורן 2',!!hdr&&hdr.n2I===3);
+  const sampleRows=[hdrRow,['8.9.26','חמישי (סוף שבוע)','דנה','יוסי','']];
+  const parsed1=hdr?parseDutyRows(sampleRows,hdr):{records:[]};
+  const rec1=parsed1.records[0];
+  check('6) הערך "חמישי (סוף שבוע)" אינו מוצג כשם תורן',!!rec1&&rec1.person1==='דנה'&&!rec1.person1.includes('סוף שבוע'));
+  // 7-10: מדמים ייבוא מלא (כולל שורה כפולה בקובץ + העלאת אותו קובץ פעמיים) על עותק זמני של state.duties
+  const savedDuties=state.duties;
+  state.duties={};
+  try{
+    const rowsWithDup=[hdrRow,
+      ['8.9.26','חמישי','דנה','יוסי',''],
+      ['8.9.26','חמישי','דנה','יוסי',''], // כפילות מדויקת של אותה שורה
+      ['9.9.26','שישי','רועי','נועה','']];
+    const parsed2=parseDutyRows(rowsWithDup,hdr);
+    check('8) שתי שורות זהות בקובץ -> רשומה אחת בלבד',parsed2.records.length===2&&parsed2.duplicatesInFile===1);
+    applyImportedRecords(parsed2.records);
+    const cardsAfterFirstImport=Object.values(state.duties).reduce((a,l)=>a+l.length,0);
+    check('9) מספר הכרטיסים בלוח שווה למספר הרשומות הייחודיות',cardsAfterFirstImport===parsed2.records.length);
+    check('10) אין שני כרטיסים זהים באותו תאריך',(state.duties['2026-09-08']||[]).length===1);
+    // 7: העלאת אותו קובץ פעמיים לא מכפילה רשומות (ייבוא שני מחליף, לא מצטבר)
+    const parsed3=parseDutyRows(rowsWithDup,hdr);
+    applyImportedRecords(parsed3.records);
+    const cardsAfterSecondImport=Object.values(state.duties).reduce((a,l)=>a+l.length,0);
+    check('7) העלאת אותו קובץ פעמיים אינה מכפילה רשומות',cardsAfterSecondImport===parsed3.records.length);
+  } finally {
+    state.duties=savedDuties;
+  }
+  return results;
+}
+function showDutyTestResults(){
+  const results=runDutyImportTests();
+  const allPass=results.every(r=>r.pass);
+  openModal(`<h3>${allPass?'✅':'❌'} בדיקות ייבוא תורנים</h3>
+    <div style="margin-top:8px">${results.map(r=>`<div style="padding:6px 0;border-bottom:1px dashed var(--line)">${r.pass?'✅':'❌'} ${escapeHtml(r.name)}</div>`).join('')}</div>
+    <div class="modal-actions"><button class="btn secondary" id="dtClose">סגירה</button></div>`,true);
+  document.getElementById('dtClose').onclick=closeModal;
 }
 function exportDutiesToExcel(){
   normalizeDuties();
