@@ -1127,13 +1127,24 @@ function setUploadStatus(html,kind){
   el.innerHTML=html?`<div class="upload-status-msg ${kind||''}">${html}</div>`:'';
 }
 // פונקציה טהורה (בלי DOM/רשת) שמפענחת שורות גיליון לרשומות תורנות ייחודיות — ניתנת לבדיקה ישירה ב-runDutyImportTests().
+function dateKeyToLocalDate(dateKey){
+  // בנייה מפורשת ממספרים מקומיים (שנה, חודש-1, יום) — בלי מעבר דרך מחרוזת/UTC בשום שלב,
+  // כדי שלא יהיה שום סיכון להזזת יום עקב אזור זמן.
+  const[y,m,d]=dateKey.split('-').map(Number);
+  return new Date(y,m-1,d);
+}
+function isSunOrThu(dateKey){
+  const dow=dateKeyToLocalDate(dateKey).getDay(); // 0=ראשון, 4=חמישי
+  return dow===0||dow===4;
+}
 function parseDutyRows(rows,hdr){
   const uniqueMap=new Map(); // uniqueKey = dateKey|person1|person2 -> record; Map מבטיח שכל שורה תיצור רשומה אחת בלבד
-  let invalidDate=0,emptyRows=0,duplicatesInFile=0;
+  let invalidDate=0,emptyRows=0,duplicatesInFile=0,totalRowsDetected=0;
   const invalidDetails=[];
   for(let i=hdr.row+1;i<rows.length;i++){
     const row=rows[i];
-    if(!row||row.every(c=>c===''||c==null)){emptyRows++;continue;}
+    if(!row||row.every(c=>c===''||c==null))continue; // שורה ריקה לגמרי — לא נספרת כלל, לא מדווחת כדולגה
+    totalRowsDetected++;
     const rawDate=row[hdr.dateI];
     const dateKey=parseDutyDateCell(rawDate);
     if(!dateKey){
@@ -1145,9 +1156,17 @@ function parseDutyRows(rows,hdr){
     const person2=String(row[hdr.n2I]==null?'':row[hdr.n2I]).trim().slice(0,24);
     const uniqueKey=`${dateKey}|${person1}|${person2}`;
     if(uniqueMap.has(uniqueKey)){duplicatesInFile++;continue;}
-    uniqueMap.set(uniqueKey,{dateKey,date:formatDDMMYYYY(dateKey),person1,person2});
+    // תיקוף יום ראשון/חמישי הוא אזהרה בלבד — הקובץ הוא תמיד מקור האמת, לא מתקנים ולא דוחים תאריך אוטומטית.
+    uniqueMap.set(uniqueKey,{dateKey,date:formatDDMMYYYY(dateKey),person1,person2,offPattern:!isSunOrThu(dateKey)});
   }
-  return {records:[...uniqueMap.values()],invalidDate,emptyRows,duplicatesInFile,invalidDetails};
+  const records=[...uniqueMap.values()];
+  const sortedKeys=records.map(r=>r.dateKey).sort();
+  return {
+    records,invalidDate,emptyRows,duplicatesInFile,invalidDetails,totalRowsDetected,
+    earliestDate:sortedKeys[0]||null,
+    latestDate:sortedKeys[sortedKeys.length-1]||null,
+    offPatternRecords:records.filter(r=>r.offPattern)
+  };
 }
 // מחיל רשומות מיובאות על state.duties: מנקה קודם כל רשומה שמקורה בייבוא קודם (ולא נוגע ברשומות ידניות),
 // ואז מוסיף את הסט החדש — כך שהעלאת קובץ מעודכן תמיד מחליפה את הייבוא הקודם ולא צוברת כפילויות/נתונים ישנים.
@@ -1197,32 +1216,53 @@ function processDutyFile(file){
       return;
     }
     const {rows,hdr}=found;
-    const {records,invalidDate,emptyRows,duplicatesInFile,invalidDetails}=parseDutyRows(rows,hdr);
-    if(!records.length){
-      setUploadStatus(`⚠️ לא נמצאו שורות תקינות בקובץ (${invalidDate} תאריכים לא תקינים, ${emptyRows} שורות ריקות)`,'bad');
+    const summary=parseDutyRows(rows,hdr);
+    // לוג ייבוא שימושי — כפי שנדרש: מספר שורות שזוהו, רשומות תקינות, טווח תאריכים, שורות שדולגו, אזהרות יום.
+    console.log('📋 סיכום ייבוא תורנים:',{
+      קובץ:file.name,
+      'שורות שזוהו':summary.totalRowsDetected,
+      'רשומות תקינות שיובאו':summary.records.length,
+      'תאריך מוקדם ביותר':summary.earliestDate?formatDDMMYYYY(summary.earliestDate):'—',
+      'תאריך מאוחר ביותר':summary.latestDate?formatDDMMYYYY(summary.latestDate):'—',
+      'שורות ריקות שדולגו':summary.emptyRows,
+      'תאריכים לא תקינים שדולגו':summary.invalidDate,
+      'כפילויות בקובץ שדולגו':summary.duplicatesInFile,
+      'תאריכים שאינם ראשון/חמישי (אזהרה בלבד, לא נדחו)':summary.offPatternRecords.map(r=>r.date)
+    });
+    if(!summary.records.length){
+      setUploadStatus(`⚠️ לא נמצאו שורות תקינות בקובץ (${summary.invalidDate} תאריכים לא תקינים, ${summary.emptyRows} שורות ריקות)`,'bad');
       return;
     }
     setUploadStatus(`✅ ${escapeHtml(file.name)} נקרא בהצלחה`,'ok');
-    showDutyPreview(file.name,records,{invalidDate,emptyRows,duplicatesInFile,invalidDetails});
+    showDutyPreview(file.name,summary);
   };
   if(isCsv)reader.readAsText(file,'UTF-8');else reader.readAsArrayBuffer(file);
 }
-function showDutyPreview(filename,records,sum){
+function showDutyPreview(filename,sum){
+  const {records}=sum;
   const sorted=[...records].sort((a,b)=>a.dateKey.localeCompare(b.dateKey));
   const rowsHtml=sorted.map(r=>
-    `<tr><td>${r.date}</td><td>${r.person1?escapeHtml(r.person1):'טרם שובץ'}</td><td>${r.person2?escapeHtml(r.person2):'טרם שובץ'}</td></tr>`
-  ).join('')+sum.invalidDetails.map(d=>`<tr><td colspan="3" class="muted">⏭️ שורה דולגה — ${escapeHtml(d.reason)}</td></tr>`).join('');
+    `<tr class="${r.offPattern?'muted':''}"><td>${r.date}</td><td>${r.person1?escapeHtml(r.person1):'טרם שובץ'}</td><td>${r.person2?escapeHtml(r.person2):'טרם שובץ'}</td>
+      <td>${r.offPattern?'⚠️ לא ראשון/חמישי':'✅'}</td></tr>`
+  ).join('')+sum.invalidDetails.map(d=>`<tr><td colspan="4" class="muted">⏭️ שורה דולגה — ${escapeHtml(d.reason)}</td></tr>`).join('');
+  const rangeHtml=sum.earliestDate?`<div class="stat-chip"><span class="ico">📅</span>טווח: <b>${formatDDMMYYYY(sum.earliestDate)}</b> — <b>${formatDDMMYYYY(sum.latestDate)}</b></div>`:'';
+  const warnHtml=sum.offPatternRecords.length
+    ?`<div class="tip" style="margin-top:10px;border-right-color:var(--mid)"><b>⚠️ שימו לב:</b> ${sum.offPatternRecords.length} תאריכים בקובץ אינם יום ראשון או חמישי (הימים הרגילים לתורנות) — הם עדיין ייובאו כי הקובץ הוא מקור האמת, אך כדאי לוודא שאין טעות בקובץ המקור: ${sum.offPatternRecords.map(r=>escapeHtml(r.date)).join(', ')}.</div>`
+    :'';
   openModal(`<h3>📋 תצוגה מקדימה — ${escapeHtml(filename)}</h3>
     <div class="stat-row">
+      <div class="stat-chip"><span class="ico">📄</span>שורות שזוהו <b>${sum.totalRowsDetected}</b></div>
       <div class="stat-chip"><span class="ico">✅</span>נמצאו <b>${records.length}</b> תורנויות ייחודיות</div>
+      ${rangeHtml}
       <div class="stat-chip"><span class="ico">⚠️</span><b>${sum.invalidDate}</b> תאריכים לא תקינים</div>
       <div class="stat-chip"><span class="ico">⏭️</span><b>${sum.duplicatesInFile}</b> כפילויות בקובץ דולגו</div>
       <div class="stat-chip"><span class="ico">➖</span><b>${sum.emptyRows}</b> שורות ריקות דולגו</div>
     </div>
+    ${warnHtml}
     <div style="max-height:280px;overflow:auto;border:1.5px solid var(--line);border-radius:10px;margin-top:10px">
-      <table class="hs-table"><tr><th>תאריך</th><th>תורן 1</th><th>תורן 2</th></tr>${rowsHtml}</table>
+      <table class="hs-table"><tr><th>תאריך</th><th>תורן 1</th><th>תורן 2</th><th>יום תקין?</th></tr>${rowsHtml}</table>
     </div>
-    <p class="muted" style="margin-top:10px">הקובץ הזה <b>יחליף</b> את כל התורנויות שיובאו מקובץ קודם (תורנויות שנוספו ידנית לא יימחקו).</p>
+    <p class="muted" style="margin-top:10px">הקובץ הזה <b>יחליף</b> את כל התורנויות שיובאו מקובץ קודם (תורנויות שנוספו ידנית לא יימחקו). לא ייווצרו תאריכים שלא מופיעים בקובץ.</p>
     <div class="modal-actions"><button class="btn" id="dpConfirm">אישור וטעינה ללוח</button>
     <button class="btn secondary" id="dpCancel">ביטול</button></div>`,true);
   document.getElementById('dpCancel').onclick=closeModal;
@@ -1236,7 +1276,7 @@ function showDutyPreview(filename,records,sum){
     toast(`נטענו ${added} תורנויות ללוח (הוחלף ייבוא קודם)`,'ok');
     const first=sorted[0];
     if(first){
-      const fd=new Date(first.dateKey+'T00:00:00');
+      const fd=dateKeyToLocalDate(first.dateKey);
       dutyMonth=fd.getMonth();dutyYear=fd.getFullYear();
     }
     dutyView='month';
@@ -1251,6 +1291,10 @@ function runDutyImportTests(){
   check('2) "8.9.26" אינו יוצר רשומה ב-2026-08-09',parseDutyDateCell('8.9.26')!=='2026-08-09');
   check('3) "11.10.26" מופיע רק ב-11 באוקטובר (2026-10-11)',parseDutyDateCell('11.10.26')==='2026-10-11');
   check('4) "10.11.26" מופיע רק ב-10 בנובמבר (2026-11-10)',parseDutyDateCell('10.11.26')==='2026-11-10');
+  check('4b) "9.8.26" = 9 באוגוסט 2026',parseDutyDateCell('9.8.26')==='2026-08-09');
+  check('4c) "1.10.26" = 1 באוקטובר 2026 (לא ינואר 10)',parseDutyDateCell('1.10.26')==='2026-10-01');
+  check('4d) "8.11.26" = 8 בנובמבר 2026',parseDutyDateCell('8.11.26')==='2026-11-08');
+  check('4e) "10.1.27" = 10 בינואר 2027',parseDutyDateCell('10.1.27')==='2027-01-10');
   const hdrRow=['תאריך','יום בשבוע','תורן 1','תורן 2','בוצע / הערות'];
   const hdr=findDutyHeaderRow([hdrRow]);
   check('5) עמודת "יום בשבוע" לעולם אינה מזוהה כתורן 1',!!hdr&&hdr.n1I===2);
@@ -1278,6 +1322,22 @@ function runDutyImportTests(){
     applyImportedRecords(parsed3.records);
     const cardsAfterSecondImport=Object.values(state.duties).reduce((a,l)=>a+l.length,0);
     check('7) העלאת אותו קובץ פעמיים אינה מכפילה רשומות',cardsAfterSecondImport===parsed3.records.length);
+    // דוגמת המשתמש המדויקת: 9.8.26 / 13.8.26 / 16.8.26 -> אוגוסט בלבד, ולא נוצרים חודשים קודמים (יולי ומטה)
+    const exampleRows=[hdrRow,
+      ['9.8.26','ראשון','ישראל','דניאל',''],
+      ['13.8.26','חמישי','יוסי','אלון',''],
+      ['16.8.26','ראשון','נועם','איתי','']];
+    const parsedEx=parseDutyRows(exampleRows,hdr);
+    check('דוגמה: 9.8.26 -> 2026-08-09 (ישראל+דניאל)',parsedEx.records.some(r=>r.dateKey==='2026-08-09'&&r.person1==='ישראל'&&r.person2==='דניאל'));
+    check('דוגמה: 13.8.26 -> 2026-08-13 (יוסי+אלון)',parsedEx.records.some(r=>r.dateKey==='2026-08-13'&&r.person1==='יוסי'&&r.person2==='אלון'));
+    check('דוגמה: 16.8.26 -> 2026-08-16 (נועם+איתי)',parsedEx.records.some(r=>r.dateKey==='2026-08-16'&&r.person1==='נועם'&&r.person2==='איתי'));
+    check('אין רשומות בחודשים שלפני אוגוסט 2026 (אין המצאת תאריכים)',parsedEx.records.every(r=>r.dateKey>='2026-08-01'));
+    check('טווח התאריכים המחושב הוא 09-16 באוגוסט בלבד',parsedEx.earliestDate==='2026-08-09'&&parsedEx.latestDate==='2026-08-16');
+    // אזהרת יום ראשון/חמישי: תאריך שנופל ביום שישי צריך להתקבל (הקובץ הוא מקור האמת) אבל לסומן כאזהרה, לא להידחות/להיתקן
+    const fridayRows=[hdrRow,['14.8.26','שישי','דנה','יוסי','']]; // 14.8.2026 הוא יום שישי בפועל
+    const parsedFri=parseDutyRows(fridayRows,hdr);
+    check('תאריך שישי מיובא בכל זאת (הקובץ הוא מקור האמת)',parsedFri.records.length===1&&parsedFri.records[0].dateKey==='2026-08-14');
+    check('תאריך שישי מסומן כאזהרת off-pattern ולא "מתוקן" בשקט',parsedFri.records[0].offPattern===true&&parsedFri.offPatternRecords.length===1);
   } finally {
     state.duties=savedDuties;
   }
