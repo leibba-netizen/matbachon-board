@@ -163,15 +163,11 @@ table.simple th{background:#EEF3EC}
 .dcard.is-today{outline:3px solid var(--lemon);outline-offset:1px}
 .dcard.empty-slot{visibility:hidden;pointer-events:none}
 .dcard .plus{color:#B4C0D4;font-size:1.5rem;margin:auto}
-.duty-mini{font-size:.76rem;font-weight:500;line-height:1.3;border-radius:8px;padding:4px 6px;border-right:3px solid transparent}
-.duty-mini .mini-note{display:block;font-size:.68rem;color:var(--muted);font-style:italic;margin-top:2px}
-.duty-mini.status-done{background:#DDF3E4;border-right-color:var(--good)}
-.duty-mini.status-pending{background:#FDF0C9;border-right-color:var(--mid)}
-.duty-mini.status-unassigned{background:#EAEDF1;border-right-color:var(--muted);color:var(--muted);font-style:italic}
-.status-pill{font-size:.72rem;font-weight:700;border-radius:999px;padding:3px 10px;white-space:nowrap;display:inline-block}
-.status-pill.status-done{background:#DDF3E4;color:#22603C}
-.status-pill.status-pending{background:#FDF0C9;color:#7A5B00}
-.status-pill.status-unassigned{background:#EAEDF1;color:var(--muted)}
+/* הדגשה עדינה בלבד לימים עם תורנות — ללא צביעה לפי סטטוס */
+.dcard.has-duty{background:var(--duty-bg,#EEF2F7);border-color:#B9C7DA}
+.duty-mini{font-size:.76rem;font-weight:500;line-height:1.5;display:flex;flex-direction:column}
+.duty-mini b{font-family:'Secular One';font-size:.9rem;color:var(--duty-header,var(--tile-dark));font-weight:400}
+.duty-mini + .duty-mini{margin-top:8px;padding-top:8px;border-top:1px dashed var(--duty-line,var(--line))}
 @media(max-width:640px){
   .duty-grid{grid-template-columns:1fr}
   .duty-grid .hd{display:none}
@@ -961,18 +957,18 @@ function renderDuty(){
   const first=new Date(dutyYear,dutyMonth,1).getDay();
   for(let i=0;i<first;i++)grid.innerHTML+='<div class="dcard empty-slot"></div>';
   for(let d=1;d<=daysIn;d++){
-    const date=new Date(dutyYear,dutyMonth,d),w=date.getDay();
+    const date=new Date(dutyYear,dutyMonth,d);
     const k=dkey(date),entries=dutyEntriesFor(k);
     const today=k===todayKey()?' is-today':'';
-    const body2=entries.length?entries.map(e=>{
-      const st=dutyStatus(e);
-      const nameHtml=(e.n1||e.n2)
-        ?`<div class="names"><span class="pname"><span class="mini-av">${initials(e.n1)}</span>${escapeHtml(e.n1||'—')}</span><span class="pname"><span class="mini-av">${initials(e.n2)}</span>${escapeHtml(e.n2||'—')}</span></div>`
-        :`<span>טרם שובץ</span>`;
-      return `<div class="duty-mini status-${st}">${nameHtml}${e.notes?`<span class="mini-note">📝 ${escapeHtml(e.notes)}</span>`:''}</div>`;
-    }).join(''):`<div class="plus">＋</div>`;
-    grid.innerHTML+=`<button class="dcard${today}" data-day="${k}" title="יום ${WORK_DAYS[w]}">
-      <div class="dnum">${d}</div>${body2}</button>`;
+    const hasDuty=entries.length?' has-duty':'';
+    // בכוונה מוצגים כאן רק שלושה פרטים: תאריך, תורן 1, תורן 2 — בלי יום בשבוע, סטטוס, הערות או כל מידע אחר.
+    const body2=entries.length?entries.map(e=>
+      `<div class="duty-mini"><b>${formatDDMMYYYY(k)}</b>
+        <span>תורן 1: ${e.n1?escapeHtml(e.n1):'טרם שובץ'}</span>
+        <span>תורן 2: ${e.n2?escapeHtml(e.n2):'טרם שובץ'}</span></div>`
+    ).join(''):`<div class="plus">＋</div>`;
+    grid.innerHTML+=`<button class="dcard${hasDuty}${today}" data-day="${k}">
+      ${entries.length?'':`<div class="dnum">${d}</div>`}${body2}</button>`;
   }
   grid.querySelectorAll('.dcard[data-day]').forEach(b=>b.onclick=()=>dayDutiesModal(b.dataset.day));
 }
@@ -981,19 +977,16 @@ function renderDutyList(container){
   const rows=[];
   for(let d=1;d<=daysIn;d++){
     const date=new Date(dutyYear,dutyMonth,d),k=dkey(date);
-    dutyEntriesFor(k).forEach(e=>rows.push({date,k,e}));
+    dutyEntriesFor(k).forEach(e=>rows.push({k,e}));
   }
   if(!rows.length){container.innerHTML='<p class="muted">אין תורנויות מתוזמנות בחודש זה.</p>';return;}
-  container.innerHTML=`<div style="overflow-x:auto"><table class="hs-table"><tr><th>תאריך</th><th>יום</th><th>תורן 1</th><th>תורן 2</th><th>הערות</th><th>סטטוס</th></tr>
-    ${rows.map(r=>{const st=dutyStatus(r.e);
-      return `<tr class="duty-list-row" data-day="${r.k}" style="cursor:pointer">
-        <td>${r.date.getDate()} ב${MONTH_NAMES[dutyMonth]}</td>
-        <td>${WORK_DAYS[r.date.getDay()]}</td>
-        <td>${escapeHtml(r.e.n1||'—')}</td>
-        <td>${escapeHtml(r.e.n2||'—')}</td>
-        <td>${escapeHtml(r.e.notes||'')}</td>
-        <td><span class="status-pill status-${st}">${st==='done'?'✅ בוצע':st==='pending'?'🟡 טרם בוצע':'⚪ טרם שובץ'}</span></td>
-      </tr>`;}).join('')}
+  // בכוונה מוצגות כאן רק שלוש עמודות: תאריך, תורן 1, תורן 2.
+  container.innerHTML=`<div style="overflow-x:auto"><table class="hs-table"><tr><th>תאריך</th><th>תורן 1</th><th>תורן 2</th></tr>
+    ${rows.map(r=>`<tr class="duty-list-row" data-day="${r.k}" style="cursor:pointer">
+        <td>${formatDDMMYYYY(r.k)}</td>
+        <td>${r.e.n1?escapeHtml(r.e.n1):'טרם שובץ'}</td>
+        <td>${r.e.n2?escapeHtml(r.e.n2):'טרם שובץ'}</td>
+      </tr>`).join('')}
   </table></div>`;
   container.querySelectorAll('.duty-list-row').forEach(tr=>tr.onclick=()=>dayDutiesModal(tr.dataset.day));
 }
@@ -1051,25 +1044,37 @@ function dayDutiesModal(k){
 function excelSerialToDate(n){
   return new Date(Math.round((n-25569)*86400*1000));
 }
+function isRealCalendarDate(dd,mm,yy){
+  // בדיקת round-trip: אם היום לא קיים בפועל בחודש הזה (למשל 31 בפברואר), Date "יגלוש" לחודש הבא
+  // ונזהה את זה ע"י השוואה חזרה — כך גם שנים מעוברות מטופלות נכון אוטומטית (29.2 תקף רק בשנה מעוברת).
+  if(dd<1||dd>31||mm<1||mm>12)return false;
+  const d=new Date(yy,mm-1,dd);
+  return d.getFullYear()===yy&&d.getMonth()===mm-1&&d.getDate()===dd;
+}
 function parseDutyDateCell(v){
   if(v instanceof Date&&!isNaN(v))return dkey(v);
   if(typeof v==='number'&&isFinite(v))return dkey(excelSerialToDate(v));
   if(typeof v==='string'){
     const s=v.trim();
-    // פורמט יום/חודש/שנה (ישראלי) — נתמכת גם שנה בת 2 ספרות. הספרה הראשונה תמיד היום, השנייה תמיד החודש.
+    // פורמט יום/חודש/שנה (ישראלי, נקודה/לוכסן/מקף) — נתמכת גם שנה בת 2 ספרות.
+    // אין שימוש ב-new Date(s) בשום שלב: מפצלים ידנית ותמיד קוראים ראשון=יום, שני=חודש, שלישי=שנה,
+    // ללא תלות בכיוון RTL של העמוד — כדי למנוע פענוח אמריקאי (MM/DD) בטעות.
     let m=s.match(/^(\d{1,2})[./\-](\d{1,2})[./\-](\d{2}|\d{4})$/);
     if(m){
       const dd=+m[1],mm=+m[2],yy=m[3].length===2?2000+ +m[3]:+m[3];
-      if(dd>=1&&dd<=31&&mm>=1&&mm<=12)return `${yy}-${pad(mm)}-${pad(dd)}`;
-      return null;
+      return isRealCalendarDate(dd,mm,yy)?`${yy}-${pad(mm)}-${pad(dd)}`:null;
     }
     // פורמט ISO: שנה-חודש-יום
     m=s.match(/^(\d{4})[./\-](\d{1,2})[./\-](\d{1,2})$/);
-    if(m){const dd=+m[3],mm=+m[2];if(dd>=1&&dd<=31&&mm>=1&&mm<=12)return `${m[1]}-${pad(mm)}-${pad(dd)}`;return null;}
+    if(m){const yy=+m[1],mm=+m[2],dd=+m[3];return isRealCalendarDate(dd,mm,yy)?`${yy}-${pad(mm)}-${pad(dd)}`:null;}
     // בכוונה לא נופלים בחזרה על new Date(s) — פירוש דו-משמעי כזה (למשל MM/DD אמריקאי)
     // עלול להפוך "8 בספטמבר" ל"9 באוגוסט" בטעות. עדיף לדלג על השורה מאשר לנחש תאריך שגוי.
   }
   return null;
+}
+function formatDDMMYYYY(dateKey){
+  const[y,m,d]=dateKey.split('-');
+  return `${d}/${m}/${y}`;
 }
 function parseDutyCourse(v){
   const s=String(v==null?'':v).trim();
