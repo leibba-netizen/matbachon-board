@@ -868,6 +868,7 @@ function renderOfficers(){
         <button class="btn small secondary" id="dutyTests" title="הרצת בדיקות אוטומטיות על מנגנון הייבוא">🧪 בדיקות ייבוא</button>
         <button class="btn small secondary" id="dutyExport">⬇️ ייצוא לאקסל</button>
         <button class="btn small danger" id="dutyReset">🗑️ איפוס הטבלה</button>
+        <button class="btn small secondary" id="dutyReminder">📋 תזכורת יומית</button>
       </div>
       <div class="toolbar">
         <select class="search-input" id="dutyMonthSel">${MONTH_NAMES.map((m,i)=>`<option value="${i}" ${i===dutyMonth?'selected':''}>${m}</option>`).join('')}</select>
@@ -888,6 +889,7 @@ function renderOfficers(){
     document.getElementById('dutyExport').onclick=exportDutiesToExcel;
     document.getElementById('dutyTests').onclick=showDutyTestResults;
     document.getElementById('dutyReset').onclick=resetDutyTable;
+    document.getElementById('dutyReminder').onclick=sendDailyReminder;
     const dz=document.getElementById('dutyDropzone');
     dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('dragover');});
     dz.addEventListener('dragleave',()=>dz.classList.remove('dragover'));
@@ -1384,6 +1386,50 @@ function resetDutyTable(){
       renderDuty();
     },
     'כן, לאפס את הכול');
+}
+async function copyToClipboard(text){
+  try{
+    if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(text);return true;}
+  }catch(e){/* ניפול לגיבוי למטה */}
+  try{
+    const ta=document.createElement('textarea');
+    ta.value=text;ta.style.position='fixed';ta.style.opacity='0';ta.style.left='-9999px';
+    document.body.appendChild(ta);ta.focus();ta.select();
+    const ok=document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  }catch(e){return false;}
+}
+async function sendDailyReminder(){
+  normalizeDuties();
+  // todayKey() בנוי ממחלקות תאריך מקומיות (getFullYear/getMonth/getDate) — "היום" האמיתי של המכשיר,
+  // בלי פענוח טקסט ובלי סיכון להחלפת יום/חודש. ה-lookup הוא ישיר לפי מפתח, מול נתונים שכבר עברו
+  // את פרסר ה-DD.MM.YY התקין (parseDutyDateCell) בזמן הייבוא.
+  const entries=state.duties[todayKey()]||[];
+  const entry=entries.find(e=>(e.n1||'').trim()&&(e.n2||'').trim());
+  if(!entry){toast('לא נמצאו תורנים להיום','bad');return;}
+  const n1=entry.n1.trim(),n2=entry.n2.trim();
+  const msg=`*${n1}* ו*${n2}* היקרים
+לפני שמתחילים — כמה דברים קטנים 😊
+כדי שנשמור על מטבחון נקי, נעים ומסודר לכולם, נשמח שתעברו על הדברים הבאים:
+
+• לוודא שהשיש והכיור נקיים (לשטוף אם צריך).
+• לבצע שטיפה לרצפה.
+• לרוקן פחים.
+• לעבור על המוצרים במקררים ולזרוק מוצרים שפג תוקפם.
+• אם יש נמלים, לנסות לזהות מאיפה הן מגיעות ולזרוק את מקור המזון שמושך אותן.
+• לוודא שהתנור והכיריים כבויים.
+• לבדוק שהלחם אינו פג תוקף וששקיות פתוחות סגורות היטב.
+• לוודא שכל המקררים סגורים כמו שצריך.
+
+שימו לב: את המקרר האפור הגדול צריך לסגור פעמיים, כי לפעמים הוא נפתח מחדש אחרי הסגירה הראשונה.
+בנוסף אשמח שתענו אחרי הניקיון הזריז על הדירוג היומי של המטבחון על ידי סריקת הברקוד בכניסה.
+בנוסף אם אבחנתם שחסר משהו יכולים להציף באפליקציה.
+למשועממים אפשר לשחק במשחקים באתר.
+תודה שעוזרים לשמור על המטבחון נקי ונעים לכולם 🙏`;
+  const ok=await copyToClipboard(msg);
+  if(ok)toast('התזכורת הועתקה ללוח ✓','ok');
+  else toast('ההעתקה נכשלה — נסו להעתיק ידנית','bad');
 }
 
 /* ==================== הזמנות ==================== */
